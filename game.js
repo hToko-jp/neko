@@ -146,9 +146,9 @@ const CAT_TYPES = [
         id: 'rentarou',
         name: 'れんたろう',
         emoji: '🏋️',
-        cost: 800,
-        cooldown: 9.0,
-        hp: 1500,
+        cost: 650,
+        cooldown: 8.0,
+        hp: 1800,
         atk: 200,
         speed: 1.0,
         range: 45,
@@ -162,9 +162,9 @@ const CAT_TYPES = [
         id: 'yuuma',
         name: 'ゆうま',
         emoji: '👑',
-        cost: 1500,
-        cooldown: 15.0,
-        hp: 3500,
+        cost: 1100,
+        cooldown: 12.0,
+        hp: 4000,
         atk: 400,
         speed: 1.5,
         range: 80,
@@ -238,7 +238,7 @@ const ENEMY_TYPES = [
         id: 'dragon',
         name: 'ドラゴン',
         emoji: '🐉',
-        hp: 1200,
+        hp: 1500,
         atk: 100,
         speed: 0.8,
         range: 100,
@@ -252,7 +252,7 @@ const ENEMY_TYPES = [
         id: 'metal_dog',
         name: 'メタル亀',
         emoji: '🐢',
-        hp: 35,
+        hp: 45,
         atk: 25,
         speed: 1.2,
         range: 25,
@@ -522,6 +522,7 @@ class Battle {
         // Cannon State
         this.cannonCooldown = 30; // 30 seconds to charge
         this.cannonTimer = 0;
+        this.cannonFiringTime = 0;
 
         // Cooldowns
         this.cooldowns = CAT_TYPES.map(() => 0);
@@ -623,6 +624,11 @@ class Battle {
             this.cannonTimer = Math.min(this.cannonCooldown, this.cannonTimer + dt);
         }
 
+        // Cannon Visual Timer
+        if (this.cannonFiringTime > 0) {
+            this.cannonFiringTime -= dt;
+        }
+
         // Cooldowns
         for (let i = 0; i < this.cooldowns.length; i++) {
             if (this.cooldowns[i] > 0) {
@@ -635,7 +641,7 @@ class Battle {
             if (wave.spawned >= wave.count) continue;
             if (this.time >= wave.nextSpawn) {
                 // Scale enemy stats based on stage
-                const stageMultiplier = 1 + (this.stage.id - 1) * 0.1;
+                const stageMultiplier = 1 + (this.stage.id - 1) * 0.15;
                 this.spawnEnemy(wave.type, stageMultiplier);
                 wave.spawned++;
                 wave.nextSpawn = this.time + wave.interval;
@@ -681,6 +687,7 @@ class Battle {
     fireCannon() {
         if (this.cannonTimer < this.cannonCooldown) return;
         this.cannonTimer = 0;
+        this.cannonFiringTime = 0.6; // duration of laser beam
 
         // Huge screen-wide effect
         this.addEffect(this.fieldWidth / 2, this.groundY - 100, '🌋 5年生キャノン!! 🌋', 1.5);
@@ -760,22 +767,21 @@ class Battle {
             // Physical collision: units are overlapping/touching
             const isColliding = target && targetSignedDist <= (unit.size / 2 + target.size / 2);
 
-            if (inUnitRange || isColliding || inBaseRange) {
+            // Once an attack starts, we lock the state to 'attack' until it finishes
+            const isAttacking = unit.state === 'attack' && unit.attackTimer > 0;
+
+            if (isAttacking || inUnitRange || isColliding || inBaseRange) {
                 // Attack
                 unit.state = 'attack';
                 unit.attackTimer += dt;
                 unit.walkCycle = 0;
-
-                if (unit.attackTimer >= unit.attackSpeed) {
-                    unit.attackTimer = 0;
-                    unit.damageDealtInSwing = false;
-                }
 
                 // Deal damage at the midpoint of the attack animation
                 if (!unit.damageDealtInSwing && unit.attackTimer >= unit.attackSpeed * 0.5) {
                     unit.damageDealtInSwing = true;
                     unit.attackAnimTime = 0.15;
 
+                    // Only actually deal damage if the target/base is currently valid and in range
                     if ((inUnitRange || isColliding) && target) {
                         this.dealDamage(unit, target);
                     }
@@ -784,12 +790,22 @@ class Battle {
                         this.addEffect(targetBase.x, this.groundY - 40, '💥', 0.3);
                     }
                 }
+
+                // Attack cycle finished
+                if (unit.attackTimer >= unit.attackSpeed) {
+                    unit.attackTimer = 0;
+                    unit.damageDealtInSwing = false;
+                    unit.state = 'ready'; // ready for next action next frame
+                }
             } else {
                 // Walk
                 unit.state = 'walk';
                 unit.x += dir * unit.speed * 60 * dt;
                 unit.walkCycle += dt * unit.speed * 3;
+
+                // Reset attack if we cleanly returned to walking
                 unit.attackTimer = 0;
+                unit.damageDealtInSwing = false;
 
                 // Physical collision: clamp position so unit can't pass through opponents
                 if (target && targetSignedDist >= 0) {
@@ -898,6 +914,38 @@ class Battle {
 
         for (const unit of allUnits) {
             this.drawUnit(ctx, unit, gy);
+        }
+
+        // --- Cannon Laser Visual ---
+        if (this.cannonFiringTime > 0) {
+            ctx.save();
+            const alpha = Math.min(1, this.cannonFiringTime * 2);
+            ctx.globalAlpha = alpha;
+            const baseY = gy - 30; // Fire from slightly above ground (middle of base)
+            const laserHeight = 60 + Math.random() * 30; // Shivering effect
+
+            // Ensure composite operation overlays bright colors nicely
+            ctx.globalCompositeOperation = 'screen';
+
+            const startX = this.playerBase.x + CONFIG.baseWidth / 2;
+
+            // Core beam (pure white)
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(startX, baseY - laserHeight / 2, w, laserHeight);
+
+            // Inner glow (bright cyan)
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.5)';
+            ctx.fillRect(startX, baseY - laserHeight / 1.5, w, laserHeight * 1.5);
+
+            // Outer glow (deep blue)
+            ctx.shadowColor = '#0000ff';
+            ctx.shadowBlur = 50;
+            ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
+            ctx.fillRect(startX, baseY - (laserHeight * 1.2), w, laserHeight * 2.4);
+
+            ctx.restore();
         }
 
         // Effects
