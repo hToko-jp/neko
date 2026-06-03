@@ -552,8 +552,9 @@ class Unit {
         this.maxHp = Math.floor(type.hp * statMultiplier);
         this.hp = this.maxHp;
         this.atk = Math.floor(type.atk * statMultiplier);
-        this.speed = type.speed;
-        this.range = type.range;
+        // Add random variance to speed (-5% to +5%) and range (-3 to +3) to prevent perfect overlapping
+        this.speed = type.speed * (0.95 + Math.random() * 0.1);
+        this.range = type.range + (Math.random() * 6 - 3);
         this.attackSpeed = type.attackSpeed;
         this.size = type.size;
         this.color = type.color;
@@ -569,7 +570,8 @@ class Unit {
         this.kbDistance = 0;
         this.deathTimer = 0;
         this.animOffset = 0;
-        this.walkCycle = 0;
+        this.walkCycle = Math.random() * Math.PI * 2; // Randomize walk cycle start
+        this.yOffset = (Math.random() - 0.5) * 16; // Random visual Y offset (depth)
         this.damageDealtInSwing = false;
     }
 
@@ -1223,7 +1225,7 @@ class Battle {
 
         // Draw body (round shape)
         const bx = x + xOff;
-        const by = y - s / 2 + yOff;
+        const by = y - s / 2 + yOff + (unit.yOffset || 0);
 
         // Shadow
         ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
