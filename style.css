@@ -71,7 +71,10 @@ body {
 
 .title-bg {
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background:
         radial-gradient(circle at 20% 80%, rgba(255, 107, 157, 0.3) 0%, transparent 50%),
         radial-gradient(circle at 80% 20%, rgba(78, 205, 196, 0.3) 0%, transparent 50%),
@@ -80,8 +83,15 @@ body {
 }
 
 @keyframes bg-float {
-    0%, 100% { transform: scale(1) rotate(0deg); }
-    50% { transform: scale(1.05) rotate(2deg); }
+
+    0%,
+    100% {
+        transform: scale(1) rotate(0deg);
+    }
+
+    50% {
+        transform: scale(1.05) rotate(2deg);
+    }
 }
 
 .title-content {
@@ -102,8 +112,15 @@ body {
 }
 
 @keyframes title-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
 }
 
 .title-cat {
@@ -117,8 +134,13 @@ body {
 }
 
 @keyframes cat-wiggle {
-    from { transform: rotate(-10deg); }
-    to { transform: rotate(10deg); }
+    from {
+        transform: rotate(-10deg);
+    }
+
+    to {
+        transform: rotate(10deg);
+    }
 }
 
 .subtitle {
@@ -161,8 +183,15 @@ body {
 }
 
 @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4); }
-    50% { box-shadow: 0 6px 40px rgba(255, 107, 157, 0.8); }
+
+    0%,
+    100% {
+        box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 6px 40px rgba(255, 107, 157, 0.8);
+    }
 }
 
 .btn-sub {
@@ -200,6 +229,36 @@ body {
 
 .btn-control:hover {
     background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-cannon {
+    margin-right: auto;
+    border-color: #f1c40f;
+    color: #f1c40f;
+    text-shadow: 0 0 5px rgba(241, 196, 15, 0.5);
+}
+
+.btn-cannon:not(:disabled) {
+    background: rgba(241, 196, 15, 0.3);
+    animation: pulse-glow-small 1.5s infinite;
+}
+
+@keyframes pulse-glow-small {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px rgba(241, 196, 15, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 15px rgba(241, 196, 15, 0.8);
+    }
+}
+
+.btn-cannon:disabled {
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.4);
+    text-shadow: none;
 }
 
 .btn-retreat {
@@ -348,7 +407,8 @@ body {
     gap: 10px;
 }
 
-.hud-left, .hud-right {
+.hud-left,
+.hud-right {
     flex: 1;
 }
 
@@ -399,8 +459,17 @@ body {
 }
 
 @keyframes coin-spin {
-    0%, 100% { display: inline-block; transform: scaleX(1); }
-    50% { display: inline-block; transform: scaleX(-1); }
+
+    0%,
+    100% {
+        display: inline-block;
+        transform: scaleX(1);
+    }
+
+    50% {
+        display: inline-block;
+        transform: scaleX(-1);
+    }
 }
 
 .stage-name-display {
@@ -520,8 +589,15 @@ body {
 }
 
 @keyframes result-pop {
-    from { transform: scale(0.5) translateY(50px); opacity: 0; }
-    to { transform: scale(1) translateY(0); opacity: 1; }
+    from {
+        transform: scale(0.5) translateY(50px);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
 }
 
 #result-title {
@@ -581,8 +657,15 @@ body {
         transform: translateY(100vh) scale(0);
         opacity: 0;
     }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
     to {
         transform: translateY(-100vh) scale(1);
         opacity: 0;

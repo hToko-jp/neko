@@ -247,6 +247,35 @@ const ENEMY_TYPES = [
         size: 55,
         money: 500,
         kb: 6,
+    },
+    {
+        id: 'metal_dog',
+        name: 'メタル亀',
+        emoji: '🐢',
+        hp: 35,
+        atk: 25,
+        speed: 1.2,
+        range: 25,
+        attackSpeed: 1.0,
+        color: '#7f8c8d',
+        size: 26,
+        money: 100,
+        kb: 2,
+        isMetal: true,
+    },
+    {
+        id: 'sniper',
+        name: 'スナイパー鳥',
+        emoji: '🦅',
+        hp: 150,
+        atk: 80,
+        speed: 1.8,
+        range: 300,
+        attackSpeed: 3.5,
+        color: '#34495e',
+        size: 30,
+        money: 120,
+        kb: 4,
     }
 ];
 
@@ -362,6 +391,37 @@ const STAGES = [
         ],
         bg: '#0d0d0d',
     },
+    {
+        id: 9,
+        name: '鋼鉄の谷',
+        baseHp: 9000,
+        moneyRate: 2.0,
+        waves: [
+            { time: 3, type: 5, count: 2, interval: 4.0 },
+            { time: 15, type: 6, count: 2, interval: 3.0 },
+            { time: 30, type: 5, count: 5, interval: 2.0 },
+            { time: 45, type: 6, count: 3, interval: 2.5 },
+            { time: 60, type: 1, count: 10, interval: 0.5 },
+            { time: 70, type: 5, count: 5, interval: 1.0 },
+        ],
+        bg: '#7f8c8d',
+    },
+    {
+        id: 10,
+        name: '5年生の卒業式',
+        baseHp: 15000,
+        moneyRate: 2.2,
+        waves: [
+            { time: 3, type: 0, count: 20, interval: 0.5 },
+            { time: 10, type: 2, count: 3, interval: 1.5 },
+            { time: 25, type: 6, count: 4, interval: 2.0 },
+            { time: 40, type: 5, count: 6, interval: 1.5 },
+            { time: 55, type: 4, count: 2, interval: 2.0 },
+            { time: 75, type: 3, count: 8, interval: 1.0 },
+            { time: 90, type: 4, count: 3, interval: 1.0 },
+        ],
+        bg: '#c0392b',
+    },
 ];
 
 // ===== Game State =====
@@ -459,6 +519,10 @@ class Battle {
         this.result = null;
         this.effects = [];
 
+        // Cannon State
+        this.cannonCooldown = 30; // 30 seconds to charge
+        this.cannonTimer = 0;
+
         // Cooldowns
         this.cooldowns = CAT_TYPES.map(() => 0);
 
@@ -554,6 +618,11 @@ class Battle {
         this.money = Math.min(CONFIG.maxMoney,
             this.money + CONFIG.moneyPerSecond * (this.stage.moneyRate || 1) * dt);
 
+        // Cannon generation
+        if (this.cannonTimer < this.cannonCooldown) {
+            this.cannonTimer = Math.min(this.cannonCooldown, this.cannonTimer + dt);
+        }
+
         // Cooldowns
         for (let i = 0; i < this.cooldowns.length; i++) {
             if (this.cooldowns[i] > 0) {
@@ -606,6 +675,36 @@ class Battle {
         } else if (this.playerBase.hp <= 0) {
             this.gameOver = true;
             this.result = 'lose';
+        }
+    }
+
+    fireCannon() {
+        if (this.cannonTimer < this.cannonCooldown) return;
+        this.cannonTimer = 0;
+
+        // Huge screen-wide effect
+        this.addEffect(this.fieldWidth / 2, this.groundY - 100, '🌋 5年生キャノン!! 🌋', 1.5);
+
+        // Damage all active enemies
+        for (const opp of this.enemyUnits) {
+            if (opp.state === 'dead') continue;
+
+            // Cannon does 500 flat damage, ignores metal defense slightly (5 dmg to metal)
+            const dmg = opp.type.isMetal ? 5 : 500;
+            opp.hp -= dmg;
+            this.addDamageNumber(opp.x, this.groundY - opp.size, dmg, true);
+
+            if (opp.hp <= 0) {
+                opp.state = 'dead';
+                opp.deathTimer = 0;
+                this.addEffect(opp.x, this.groundY - opp.size / 2, '💀', 0.5);
+                if (opp.type.money) {
+                    this.money = Math.min(CONFIG.maxMoney, this.money + opp.type.money);
+                }
+            } else {
+                opp.state = 'kb';
+                opp.kbTimer = 0.8; // Huge knockback
+            }
         }
     }
 
@@ -718,8 +817,9 @@ class Battle {
     }
 
     dealDamage(attacker, defender) {
-        defender.hp -= attacker.atk;
-        this.addDamageNumber(defender.x, this.groundY - defender.size, attacker.atk);
+        const dmg = defender.type.isMetal ? 1 : attacker.atk;
+        defender.hp -= dmg;
+        this.addDamageNumber(defender.x, this.groundY - defender.size, dmg);
 
         // Knockback check
         const hpThreshold = defender.maxHp - (defender.maxHp / defender.kb) * (defender.kb - defender.kbRemaining + 1);
@@ -1255,6 +1355,19 @@ class Game {
 
         document.getElementById('money-text').textContent = Math.floor(this.battle.money);
 
+        // Cannon progress
+        const cannonBtn = document.getElementById('cannon-btn');
+        if (cannonBtn) {
+            if (this.battle.cannonTimer >= this.battle.cannonCooldown) {
+                cannonBtn.disabled = false;
+                cannonBtn.textContent = '💥 キャノン (撃てます!)';
+            } else {
+                cannonBtn.disabled = true;
+                const pct = Math.floor((this.battle.cannonTimer / this.battle.cannonCooldown) * 100);
+                cannonBtn.textContent = `💥 キャノン (${pct}%)`;
+            }
+        }
+
         const playerRatio = this.battle.playerBase.hp / this.battle.playerBase.maxHp;
         const enemyRatio = this.battle.enemyBase.hp / this.battle.enemyBase.maxHp;
 
@@ -1333,6 +1446,13 @@ class Game {
         });
 
         // Battle controls
+        const cannonBtn = document.getElementById('cannon-btn');
+        if (cannonBtn) {
+            cannonBtn.addEventListener('click', () => {
+                if (this.battle) this.battle.fireCannon();
+            });
+        }
+
         document.getElementById('speed-btn').addEventListener('click', () => {
             if (this.battle) {
                 if (this.battle.speed === 1) this.battle.speed = 2;
