@@ -180,7 +180,7 @@ const CAT_TYPES = [
 const ENEMY_TYPES = [
     {
         id: 'dog',
-        name: 'ワンコ',
+        name: 'ところ',
         emoji: '🐕',
         hp: 80,
         atk: 15,
@@ -194,7 +194,7 @@ const ENEMY_TYPES = [
     },
     {
         id: 'snake',
-        name: 'ヘビ',
+        name: 'えりこ',
         emoji: '🐍',
         hp: 120,
         atk: 30,
@@ -208,7 +208,7 @@ const ENEMY_TYPES = [
     },
     {
         id: 'robot',
-        name: 'ロボット',
+        name: 'みさき',
         emoji: '🤖',
         hp: 300,
         atk: 40,
@@ -222,7 +222,7 @@ const ENEMY_TYPES = [
     },
     {
         id: 'demon',
-        name: 'アクマ',
+        name: 'テス',
         emoji: '👿',
         hp: 200,
         atk: 60,
@@ -236,7 +236,7 @@ const ENEMY_TYPES = [
     },
     {
         id: 'dragon',
-        name: 'ドラゴン',
+        name: 'もとこ',
         emoji: '🐉',
         hp: 1500,
         atk: 100,
@@ -250,7 +250,7 @@ const ENEMY_TYPES = [
     },
     {
         id: 'metal_dog',
-        name: 'メタル亀',
+        name: 'きょーとー',
         emoji: '🐢',
         hp: 45,
         atk: 25,
@@ -265,7 +265,7 @@ const ENEMY_TYPES = [
     },
     {
         id: 'sniper',
-        name: 'スナイパー鳥',
+        name: 'こーちょー',
         emoji: '🦅',
         hp: 150,
         atk: 80,
@@ -1295,6 +1295,17 @@ class Battle {
         ctx.font = `${Math.max(14, s * 0.5)}px serif`;
         ctx.textAlign = 'center';
         ctx.fillText(unit.emoji, bx, by - s * 0.5 - 2);
+
+        // Name above emoji for enemies
+        if (!unit.isCat) {
+            ctx.font = `bold 12px sans-serif`;
+            const nameY = by - s * 0.5 - 20;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.strokeText(unit.type.name, bx, nameY);
+            ctx.fillStyle = '#c0392b';
+            ctx.fillText(unit.type.name, bx, nameY);
+        }
 
         // HP bar
         if (unit.hp < unit.maxHp && unit.state !== 'dead') {
